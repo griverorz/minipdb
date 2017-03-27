@@ -2,16 +2,16 @@
 
 from flask import (
     Flask,
-    jsonify,
-    make_response)
+    jsonify)
 from flask_sqlalchemy import SQLAlchemy
 from flask_restful import Api, Resource
-
+from datetime import datetime
 
 app = Flask(__name__)
 api = Api(app)
 URI = 'postgresql://gonzalorivero@localhost:5432/pdb'
 app.config['SQLALCHEMY_DATABASE_URI'] = URI
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 db = SQLAlchemy(app)
 
 
@@ -32,7 +32,7 @@ class Pdb(db.Model):
         return '<Pdb %r>' % self.GIDBG
 
 
-class PdbBlockgroup(Resource):
+class PdbLRS(Resource):
     def __init__(self):
         self.headers = {'Content-Type': 'text/html'}
 
@@ -47,31 +47,39 @@ class PdbBlockgroup(Resource):
         lrs = (Pdb.query.
                filter(*queries).
                all())
-        try:
+        if lrs:
             datalist = []
             for i in lrs:
                 data = {"state": i.State_name,
+                        "state_id": i.State,
                         "county": i.County_name,
+                        "county_id": i.County,
                         "tract": i.Tract,
                         "blockgroup": i.Block_Group,
-                        "score": i.Low_Response_Score}
+                        "score": i.Low_Response_Score/100 if i.Low_Response_Score else None}
                 datalist.append(data)
             res = {"data": datalist,
-                   "response": 200}
-        except:
-            res = {"error": {"message": "Not found"},
-                   "response": 404}
+                   "response": 200,
+                   "version": "v2015-07-28",
+                   "timestamp": datetime.now()}
+        else:
+            attempt = {'state': state,
+                       'county': county,
+                       'tract': tract,
+                       'blockgroup': blockgroup}
+            res = {"error": {"message": "Resource {} not found".format(attempt)},
+                   "response": 404,
+                   "timestamp": datetime.now()}
         return(jsonify(res))
 
 
 api.add_resource(
-    PdbBlockgroup,
-    '/minipdb',
+    PdbLRS,
     '/minipdb/<state>/',
     '/minipdb/<state>/<county>/',
     '/minipdb/<state>/<county>/<tract>/',
-    '/minipdb/<state>/<county>/<tract>/<blockgroup>'
-)
+    '/minipdb/<state>/<county>/<tract>/<blockgroup>')
+
 
 if __name__ == '__main__':
     app.run(debug=True)

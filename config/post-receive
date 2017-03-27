@@ -1,0 +1,2 @@
+#!/bin/sh
+sudo git --work-tree=/home/www/minipdb/ --git-dir=/home/git/minipdb.git/ checkout -f

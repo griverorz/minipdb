@@ -30,7 +30,8 @@ dbWriteTable(con,
              append=FALSE,
              row.names=FALSE)
 
-dbGetQuery(con, "CREATE INDEX GIDBG_idx ON pdb (\"GIDBG\");")
+dbGetQuery(con, "CREATE INDEX state_idx ON pdb (\"State\");")
+dbGetQuery(con, "CREATE INDEX County_idx ON pdb (\"County\");")
 dbGetQuery(con, "CREATE INDEX Tract_idx ON pdb (\"Tract\");")
 dbGetQuery(con, "CREATE INDEX Block_Group_idx ON pdb (\"Block_Group\");")
 
