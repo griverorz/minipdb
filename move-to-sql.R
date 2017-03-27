@@ -1,7 +1,10 @@
+library(bit64)
 library(readr)
 library(RODBC)
 library(RPostgreSQL)
 library(jsonlite)
+
+options(digits = 14)
 
 creds <- fromJSON("credentials.json")
 drv <- dbDriver("PostgreSQL")
@@ -19,7 +22,7 @@ download.file(url, temp)
 pdb <- read.csv(unz(temp, "tmp.csv"))
 unlink(temp)
 
-pdb$GIDBG <- as.integer(pdb$GIDBG)
+pdb$GIDBG <- as.integer64(pdb$GIDBG)
 
 dbWriteTable(con,
              "pdb", 
@@ -27,6 +30,7 @@ dbWriteTable(con,
              append=FALSE,
              row.names=FALSE)
 
-dbGetQuery(con, "CREATE INDEX gidbg_idx ON pdb (GIDBG);")
-dbGetQuery(con, "CREATE INDEX gidbg_idx ON pdb (GIDBG);")
-dbGetQuery(con, "CREATE INDEX gidbg_idx ON pdb (GIDBG);")
+dbGetQuery(con, "CREATE INDEX GIDBG_idx ON pdb (\"GIDBG\");")
+dbGetQuery(con, "CREATE INDEX Tract_idx ON pdb (\"Tract\");")
+dbGetQuery(con, "CREATE INDEX Block_Group_idx ON pdb (\"Block_Group\");")
+
