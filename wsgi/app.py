@@ -6,10 +6,17 @@ from flask import (
 from flask_sqlalchemy import SQLAlchemy
 from flask_restful import Api, Resource
 from datetime import datetime
+from config import Config, Prod
+
 
 app = Flask(__name__)
 api = Api(app)
-URI = 'postgresql://gonzalorivero@localhost:5432/pdb'
+app.config.from_object('config.Config')
+URISTR = 'postgresql://{dbuser}@{dbhost}:{dbport}/{dbname}'
+URI = URISTR.format(dbuser=Config.DBUSER,
+                    dbhost=Config.DBHOST,
+                    dbport=Config.DBPORT,
+                    dbname=Config.DBNAME)
 app.config['SQLALCHEMY_DATABASE_URI'] = URI
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 db = SQLAlchemy(app)
@@ -50,13 +57,14 @@ class PdbLRS(Resource):
         if lrs:
             datalist = []
             for i in lrs:
+                score = i.Low_Response_Score/100 if i.Low_Response_Score else None
                 data = {"state": i.State_name,
                         "state_id": i.State,
                         "county": i.County_name,
                         "county_id": i.County,
                         "tract": i.Tract,
                         "blockgroup": i.Block_Group,
-                        "score": i.Low_Response_Score/100 if i.Low_Response_Score else None}
+                        "score": score}
                 datalist.append(data)
             res = {"data": datalist,
                    "response": 200,
@@ -82,4 +90,4 @@ api.add_resource(
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=Config.DEBUG)

@@ -1,19 +1,13 @@
 # Imports
 from fabric.api import cd, env, lcd, put, local, sudo, run
 from fabric.contrib.files import exists
-import json
+from config import Prod
 import os
 
 # Config
 PATH = os.path.abspath(".")
 local_app_dir = os.path.join(PATH, ".")
 local_config_dir = os.path.join(local_app_dir, 'config')
-    
-app_credentials = os.path.join(local_app_dir, 'credentials.json')
-CREDENTIALS = json.loads(open(app_credentials).read())
-
-app_credentials = local_app_dir + '/credentials.json'
-CREDENTIALS = json.loads(open(app_credentials).read())
 
 remote_app_dir = '/home/www'
 remote_git_dir = '/home/git'
@@ -21,9 +15,9 @@ remote_flask_dir = os.path.join(remote_app_dir, 'minipdb')
 remote_nginx_dir = '/etc/nginx/sites-enabled'
 remote_supervisor_dir = '/etc/supervisor/conf.d'
 
-env.hosts = [CREDENTIALS["remote"]["host"]]
+env.hosts = [Prod.APP_HOST]
 env.user = 'ubuntu'
-env.key_filename = CREDENTIALS["remote"]["key"]
+env.key_filename = Prod.APP_KEY
 
 # Tasks
 
