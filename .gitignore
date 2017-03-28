@@ -1,0 +1,5 @@
+.DS_Store
+.Rhistory
+*.pyc
+wsgi/__pycache__
+wsgi/config.py
