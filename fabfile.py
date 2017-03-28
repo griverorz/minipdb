@@ -1,7 +1,7 @@
 # Imports
 from fabric.api import cd, env, lcd, put, local, sudo, run
 from fabric.contrib.files import exists
-from config import Prod
+from wsgi.config import Prod
 import os
 
 # Config
@@ -13,7 +13,7 @@ remote_app_dir = '/home/www'
 remote_git_dir = '/home/git'
 remote_flask_dir = os.path.join(remote_app_dir, 'minipdb')
 remote_nginx_dir = '/etc/nginx/sites-enabled'
-remote_supervisor_dir = '/etc/supervisor/conf.d'
+remote_circus_dir = '/etc/circus'
 
 env.hosts = [Prod.APP_HOST]
 env.user = 'ubuntu'
@@ -25,10 +25,12 @@ env.key_filename = Prod.APP_KEY
 def install_requirements():
     """ Install required packages. """
     sudo('apt-get update')
-    sudo('apt-get install -y nginx supervisor')
+    sudo('apt-get install -y nginx circus')
     sudo('apt-get install -y python3 python3-pip python3-dev python-virtualenv')
+    sudo('apt-get install -y r-base unixodbc')
     sudo('apt-get install -y git')
     sudo('apt-get install -y postgresql-client postgresql-contrib')
+    sudo('apt-get install -y install postgresql-server-dev-9.5')
 
 
 def install_flask():
@@ -48,10 +50,12 @@ def install_flask():
             run('source env/bin/activate')
         with cd(remote_flask_dir):
             put('requirements.txt', '.', use_sudo=False)
-            put('credentials.json', '.', use_sudo=False)
             run(remote_app_dir + "/env/bin/pip3 -q install pip --upgrade")
             run(remote_app_dir + "/env/bin/pip3 -q install gunicorn")
             run(remote_app_dir + "/env/bin/pip3 -q install -r requirements.txt")
+            if exists('./wsgi') is False:
+                run('mkdir ' + remote_flask_dir + '/wsgi')
+                put('wsgi/config.py', 'wsgi/.', use_sudo=False)
 
 
 def configure_nginx():
@@ -75,18 +79,17 @@ def configure_nginx():
     sudo('/etc/init.d/nginx restart')
 
 
-def configure_supervisor():
+def configure_circus():
     """
-    1. Create new supervisor config file
+    1. Create new circus config file
     2. Copy local config to remote config
     3. Register new command
     """
-    if exists('/etc/supervisor/conf.d/minipdb.conf') is False:
-        with lcd(local_config_dir):
-            with cd(remote_supervisor_dir):
-                put('./minipdb.conf', './', use_sudo=True)
-                sudo('supervisorctl reread')
-                sudo('supervisorctl update')
+    local("pwd")
+    put('minipdb.ini', remote_circus_dir, use_sudo=True)
+    with cd(remote_circus_dir):
+        sudo('circusd --daemon minipdb.ini')
+        sudo('circusctl start')
 
 
 def configure_git():
@@ -114,7 +117,7 @@ def configure_git():
 def run_app():
     """ Run the app! """
     with cd(remote_flask_dir):
-        sudo('supervisorctl start minipdb')
+        sudo('circusctl start minipdb')
 
 
 def copy_code():
@@ -126,27 +129,27 @@ def copy_code():
 def deploy():
     """
     1. Copy new Flask files
-    2. Restart gunicorn via supervisor
+    2. Restart gunicorn via circus
     """
     with lcd(local_app_dir):
         local('git push production master')
-        sudo('supervisorctl restart minipdb')
+        sudo('circusctl restart minipdb')
 
 
 def rollback():
     """
     1. Quick rollback in case of error
-    2. Restart gunicorn via supervisor
+    2. Restart gunicorn via circus
     """
     with lcd(local_app_dir):
         local('git revert HEAD~1')
         local('git push production master')
-        sudo('supervisorctl restart minipdb')
+        sudo('circusctl restart minipdb')
 
 
 def status():
     """ Is our app live? """
-    sudo('supervisorctl status')
+    sudo('circusctl status')
 
 
 def create():
@@ -155,5 +158,5 @@ def create():
     install_flask()
     configure_nginx()
     configure_git()
-    configure_supervisor()
+    configure_circus()
     copy_code()
