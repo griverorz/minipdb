@@ -15,6 +15,20 @@ from marshmallow import (
     ValidationError)
 
 
+app = Flask(__name__)
+api = Api(app)
+app.config.from_object('config.Config')
+# URISTR = 'postgresql://{dbuser}@{dbhost}:{dbport}/{dbname}'
+# URI = URISTR.format(dbuser=Config.DBUSER,
+#                     dbhost=Config.DBHOST,
+#                     dbport=Config.DBPORT,
+#                     dbname=Config.DBNAME)
+URI = 'postgresql:///pdb'
+app.config['SQLALCHEMY_DATABASE_URI'] = URI
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
+db = SQLAlchemy(app)
+
+
 class RequestSchema(Schema):
     state = fields.Integer(required=True,
                            error_messages={'required': "State is required"})
@@ -37,19 +51,6 @@ class RequestSchema(Schema):
         unknown = set(original_data) - set(self.fields)
         if unknown:
             raise ValidationError('Unknown field', unknown)
-
-
-app = Flask(__name__)
-api = Api(app)
-app.config.from_object('config.Config')
-URISTR = 'postgresql://{dbuser}@{dbhost}:{dbport}/{dbname}'
-URI = URISTR.format(dbuser=Config.DBUSER,
-                    dbhost=Config.DBHOST,
-                    dbport=Config.DBPORT,
-                    dbname=Config.DBNAME)
-app.config['SQLALCHEMY_DATABASE_URI'] = URI
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
-db = SQLAlchemy(app)
 
 
 class Pdb(db.Model):
