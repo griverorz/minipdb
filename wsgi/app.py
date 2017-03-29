@@ -26,10 +26,10 @@ class RequestSchema(Schema):
     def make_object(self, data):
         if "blockgroup" in data:
             if "tract" not in data:
-                raise ValidationError("Schema not nested")
+                raise ValidationError("Missing tract")
         if "tract" in data:
             if "county" not in data:
-                raise ValidationError("Schema not nested")
+                raise ValidationError("Missing county")
         return(data)
 
     @validates_schema(pass_original=True)
@@ -113,6 +113,11 @@ class PdbLRS(Resource):
     def __init__(self):
         self.headers = {'Content-Type': 'text/html'}
 
+    def get(self):
+        res = {"message": "Application is ready."}
+        statuscode = 200
+        return(res, statuscode)
+    
     def post(self):
         try:
             inputdata = request.get_json()
